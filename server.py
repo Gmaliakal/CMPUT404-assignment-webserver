@@ -1,6 +1,7 @@
 #  coding: utf-8 
 import socketserver
 import os
+from os import path
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 
@@ -39,30 +40,85 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         self.data = self.request.recv(1024).strip()
         strdata = str(self.data)
-        newdata = strdata.split()
-
-        
-
-        
-
+        newdata = strdata.split()[1]
+        first = strdata.split()[0]
+        getmsg = "GET"
        
 
-        try:
-            directory = str(os.getcwd())+"/www"+newdata[1]
-            
-            #check to see if we are in root directory
-            print(newdata[1])
-            if newdata[1]=="/":
-                response = "HTTP/1.1 200\r\nContent-Type: text/\r\n\r\n"
-                self.request.sendall(response.encode())
-                return
-                
-            file_type = (newdata[1].split("."))[1]
-            f = open(directory,"r")
-            text = f.read()
-
-            response = "HTTP/1.1 200\r\nContent-Type: text/"+file_type+"\r\n\r\n" + text
+        if getmsg in first:
+            pass
+        else:
+            response = "HTTP/1.1 405\r\nContent-Type: text/\r\n\r\n"
             self.request.sendall(response.encode())
+
+        
+
+        
+
+        try:
+            mypath = str(os.getcwd())+"/www"+newdata
+            
+
+            #check to see if we are in root directory
+            print(newdata)
+
+            # we will first try to open the file to see if it exists if it is a directory or does not exist we will handle it
+
+            # checks to see if the file exists
+            if path.isfile(mypath):
+                file_type = (newdata.split("."))[1]
+                f = open(mypath,"r")
+                text = f.read()
+                response = "HTTP/1.1 200\r\nContent-Type: text/"+file_type+"\r\n\r\n" + text
+                self.request.sendall(response.encode())
+                
+            
+
+            # check to see if its a directory
+            elif path.isdir(mypath):
+                print("this is a directory")
+                datalength = len(newdata)
+                last_value=newdata[datalength-1]
+                
+
+                # send a 200 OK if slash is included
+                if last_value == "/":
+                    print("slash included path is "+mypath+"index.html")
+                    #file_type = (newdata.split("."))[1]
+                    f = open(mypath+"index.html","r")
+                    text = f.read()
+                    response = "HTTP/1.1 200\r\nContent-Type: text/"+"html"+"\r\n\r\n" + text
+                    self.request.sendall(response.encode())
+
+
+                # send a 302 moved error if slash is not included and redirect
+                else:
+                    #print("no slash included corrected path is "+mypath+"/index.html")
+                    #file_type = (newdata.split("."))[1]
+                    #f = open(mypath+"/index.html","r")
+                    #text = f.read()
+                    response = "HTTP/1.1 301\r\nLocation: "+"http://127.0.0.1:8080"+newdata+"/"+"\r\n\r\n"
+                    self.request.sendall(response.encode())
+                    
+
+            else:
+                response = "HTTP/1.1 404\r\nContent-Type: text/\r\n\r\n"
+                self.request.sendall(response.encode())
+
+
+            #check to see if the user enters slash after they input the  directory
+
+            
+            # # check to see if the data ends in a "/"
+            # if mypath[len(mypath)] == "/":
+            #     f2 = open(mypath+"index.html","r")
+            #     text2 = f2.read()
+            #     response = "HTTP/1.1 200\r\nContent-Type: text/"+"html"+"\r\n\r\n" + text2
+            #     self.request.sendall(response.encode())
+            #     return
+
+
+            
 
         except:
             response = "HTTP/1.1 404\r\nContent-Type: text/\r\n\r\n"
@@ -70,10 +126,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
            
 
         
-
-
-
-
         #self.request.sendall(bytearray(myfolder,'utf-8'))
 
 if __name__ == "__main__":
